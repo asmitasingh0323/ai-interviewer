@@ -1,0 +1,28 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment files
+*.env
+db_config.env
+
+# Logs
+*.log
+
+# Node / React
+interview-ui/node_modules/
+interview-ui/.next/
+interview-ui/dist/
+interview-ui/.vite/
+
+# Java (Spring Boot)
+java/interview-api/target/
+*.jar
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/

@@ -63,6 +63,14 @@ When it asks for a session id, enter:
 d959d16a-bbb5-43e2-8a99-98a087db4c46
 If it prints 📤 Task sent to worker, that means RabbitMQ got the message and the worker will process it.
 
+
+cd ai_worker
+python -m venv mistral-env
+.\mistral-env\Scripts\activate
+pip install flask pika psycopg2-binary python-dotenv requests
+
+
+
 5️⃣ Start Frontend (React + Vite)
 Command:
 

@@ -74,55 +74,100 @@ def update_evaluation_in_db(session_id, evaluation, score):
 
 #     )
 
+# # def evaluate_answer(question, answer):
+#     prompt = (
+#         "You are an AI interviewer evaluating a candidate's solution to a coding problem.\n\n"
+#         "Evaluate the answer based on the following criteria and scoring breakdown:\n"
+#         "- Logic correctness: 50 points\n"
+#         "- Time complexity: 20 points\n"
+#         "- Space complexity: 20 points\n"
+#         "- Syntax correctness: 10 points\n\n"
+
+#         "For each of these categories, provide:\n"
+#         "- A short explanation\n"
+#         "- The actual time and space complexity (e.g., O(n), O(n^2)) if applicable\n"
+#         "- Justification for the score\n\n"
+
+#         "Then return a JSON with the following structure:\n"
+#         ```json
+#         {
+#           \"Evaluation\": {
+#             \"Logic\": \"...explanation...\",
+#             \"TimeComplexity\": {
+#               \"Complexity\": \"O(n^2)\",
+#               \"Explanation\": \"Used bubble sort which is inefficient for this task.\"
+#             },
+#             \"SpaceComplexity\": {
+#               \"Complexity\": \"O(n)\",
+#               \"Explanation\": \"Used additional list to store all node values.\"
+#             },
+#             \"Syntax\": \"...comment on code syntax...\"
+#           },
+#           \"ScoreBreakdown\": {
+#             \"Logic\": 45,
+#             \"TimeComplexity\": 10,
+#             \"SpaceComplexity\": 15,
+#             \"Syntax\": 8
+#           },
+#           \"TotalScore\": 78
+#         }
+#         ```
+
+#         f"Question: {question}\n"
+#         f"Answer: {answer}\n\n"
+#         "Output JSON only. No prose or explanation outside JSON."
+#     )
+#     return prompt
+
+#     payload = {
+#         "model": "mistral-tiny",
+#         "messages": [
+#             {"role": "system", "content": prompt}
+#         ]
+#     }
+
+#     headers = {
+#         "Authorization": f"Bearer {API_KEY}",
+#         "Content-Type": "application/json"
+#     }
+
+#     response = requests.post(API_URL, headers=headers, json=payload)
+#     if response.status_code == 200:
+#         return response.json()["choices"][0]["message"]["content"]
+#     else:
+#         return f"❌ Error: {response.status_code} - {response.text}"
+
+
 def evaluate_answer(question, answer):
     prompt = (
-        "You are an AI interviewer evaluating a candidate's solution to a coding problem.\n\n"
-        "Evaluate the answer based on the following criteria and scoring breakdown:\n"
-        "- Logic correctness: 50 points\n"
-        "- Time complexity: 20 points\n"
-        "- Space complexity: 20 points\n"
-        "- Syntax correctness: 10 points\n\n"
-
-        "For each of these categories, provide:\n"
-        "- A short explanation\n"
-        "- The actual time and space complexity (e.g., O(n), O(n^2)) if applicable\n"
-        "- Justification for the score\n\n"
-
-        "Then return a JSON with the following structure:\n"
-        ```json
-        {
-          \"Evaluation\": {
-            \"Logic\": \"...explanation...\",
-            \"TimeComplexity\": {
-              \"Complexity\": \"O(n^2)\",
-              \"Explanation\": \"Used bubble sort which is inefficient for this task.\"
-            },
-            \"SpaceComplexity\": {
-              \"Complexity\": \"O(n)\",
-              \"Explanation\": \"Used additional list to store all node values.\"
-            },
-            \"Syntax\": \"...comment on code syntax...\"
-          },
-          \"ScoreBreakdown\": {
-            \"Logic\": 45,
-            \"TimeComplexity\": 10,
-            \"SpaceComplexity\": 15,
-            \"Syntax\": 8
-          },
-          \"TotalScore\": 78
-        }
-        ```
-
+        "You are an AI interviewer evaluating a candidate's coding answer.\n"
+        "Output ONLY valid JSON with this structure:\n"
+        "{\n"
+        "  \"Evaluation\": {\n"
+        "    \"Logic\": \"...\",\n"
+        "    \"TimeComplexity\": {\"Complexity\": \"O(n)\", \"Explanation\": \"...\"},\n"
+        "    \"SpaceComplexity\": {\"Complexity\": \"O(n)\", \"Explanation\": \"...\"},\n"
+        "    \"Syntax\": \"...\"\n"
+        "  },\n"
+        "  \"ScoreBreakdown\": {\n"
+        "    \"Logic\": 0,\n"
+        "    \"TimeComplexity\": 0,\n"
+        "    \"SpaceComplexity\": 0,\n"
+        "    \"Syntax\": 0\n"
+        "  },\n"
+        "  \"TotalScore\": 0\n"
+        "}\n"
         f"Question: {question}\n"
-        f"Answer: {answer}\n\n"
-        "Output JSON only. No prose or explanation outside JSON."
+        f"Answer: {answer}\n"
+        "Return ONLY the JSON."
     )
-    return prompt
+
+    print("DEBUG prompt:", prompt[:200])
 
     payload = {
-        "model": "mistral-tiny",
+        "model": "mistral-small",
         "messages": [
-            {"role": "system", "content": prompt}
+            {"role": "user", "content": prompt}
         ]
     }
 
@@ -132,29 +177,37 @@ def evaluate_answer(question, answer):
     }
 
     response = requests.post(API_URL, headers=headers, json=payload)
-    if response.status_code == 200:
-        return response.json()["choices"][0]["message"]["content"]
-    else:
-        return f"❌ Error: {response.status_code} - {response.text}"
+
+    print("DEBUG response:", response.text)
+
+    if response.status_code != 200:
+        return {"error": response.text}
+
+    return response.json()["choices"][0]["message"]["content"]
+
 
 def extract_result(result):
-    # Since result is already a string, no need to decode it
-    result_json = json.loads(result)
-    
-    evaluation = result_json.get("Evaluation", "").strip()
-    score_raw = result_json.get("Score", 0)
+    # result may be error dict
+    if isinstance(result, dict) and "error" in result:
+        print("❌ API Error:", result["error"])
+        return "", 0
+
+    # model wrapped JSON inside backticks – remove them
+    cleaned = result.strip().replace("```json", "").replace("```", "").strip()
 
     try:
-        # Safely convert score to float
-        score = float(score_raw)
-        # Optionally round or convert to int if needed by your DB
-        score = round(score, 2)  # or just int(score)
-    except (ValueError, TypeError):
-        score = 0.0  # fallback in case of malformed value
+        data = json.loads(cleaned)
+    except Exception as e:
+        print("❌ Invalid JSON returned:", e)
+        print("Raw model output:", result)
+        return "", 0
+
+    evaluation = json.dumps(data.get("Evaluation", {}))
+    score = data.get("TotalScore", 0)
 
     return evaluation, score
 
-    
+
 def on_message(ch, method, properties, body):
     print(body)
     task = json.loads(body.decode())
@@ -162,20 +215,22 @@ def on_message(ch, method, properties, body):
 
     print("\n🔍 Received task")
     print(f"Question: {session}")
-    question, answer  = fetch_question_answer(session)
+    question, answer = fetch_question_answer(session)
     print(f"✅ Found question and answer:\nQ: {question}\nA: {answer}")
 
     if not question or not answer:
         print("❌ No record found for that session_id.")
         return
-    
+
     result = evaluate_answer(question, answer)
     print(f"\n✅ Evaluation:\n{result}")
     evaluation, score = extract_result(result)
     update_evaluation_in_db(session, evaluation, score)
-    print(f"✅ Updated evaluation and score in the database for session_id {session}.")
+    print(
+        f"✅ Updated evaluation and score in the database for session_id {session}.")
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
+
 
 # Connect to RabbitMQ and start consuming
 connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))

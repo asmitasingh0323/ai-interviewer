@@ -35,16 +35,30 @@ Infrastructure
 
 ## Repository Structure
 
-mistral/
-├── db_send_eval_response.py
-├── mistralWorker.py
-├── jd_validator_worker.py
-├── question_generator_worker.py
-├── db_config.env
-├── interview-ui/ # React frontend
-├── java/
-│ └── interview-api/ # Spring Boot backend
-├── venv/ # Python virtual environment
+AI-Interviewer/
+│
+├── ai_worker/              # Python AI evaluation microservice
+│   ├── mistralWorker.py
+│   ├── db_config.env
+│   ├── ai_engine_server.py
+│   ├── ai_interviewer.py
+│   └── db_send_eval_response.py
+│
+├── backend/
+│   └── interview-api/      # Java Spring Boot backend
+│       ├── src/
+│       ├── pom.xml
+│       ├── mvnw / mvnw.cmd
+│       └── HELP.md
+│
+├── interview-ui/           # React frontend (Vite)
+│   ├── src/
+│   ├── package.json
+│   └── vite.config.js
+│
+├── RUN_NOTES.md            # Setup + run instructions
+└── .gitignore
+
 
 ---
 
@@ -57,7 +71,7 @@ Make sure the following are installed:
 - Node.js 18 or later
 - Python 3.9 or later
 - PostgreSQL (running)
-- RabbitMQ (running)
+- RabbitMQ (running): Must run on localhost:5672
 
 Optional:
 - DBeaver / pgAdmin
@@ -100,13 +114,17 @@ cd java\interview-api
 Backend will be available at:
 http://localhost:8080
 
+You should see:
+
+Tomcat started on port(s): 8080
+Started InterviewApiApplication...
 
 ---
 
 ### Step 3: Start Python AI Workers
 
 From the project root:
-
+Activate virtual environment:
 .\venv\Scripts\activate
 
 python mistralWorker.py
@@ -115,7 +133,10 @@ python question_generator_worker.py
 
 
 Each worker will start listening for tasks from RabbitMQ.
-
+  You should see:
+  Mistral worker is running and waiting for tasks...
+  Similarly others
+  
 ---
 
 ### Step 4: Optional Manual Evaluation Test
@@ -139,7 +160,10 @@ npm run dev
 Frontend will be available at:
 http://localhost:5173
 
-
+    You should see:
+        VITE v5.x.x ready in 400ms
+        Local: http://localhost:5173/
+        Frontend → http://localhost:5173
 ---
 
 ## Recommended Startup Order

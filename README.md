@@ -175,6 +175,12 @@ http://localhost:5173
 5. React frontend
 
 ---
+## Project Demo / Presentation
+
+A recorded walkthrough of the system and architecture is available here:
+
+Google Drive:
+https://drive.google.com/file/d/1WiEHTK2YsR6VpAZfHe80WUyxKIu8t7p1/view?usp=sharing
 
 ## Shutdown Order
 
